@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="ProgramLabsMMO.vcxproj" />
+  <Project Path="ProgramLabsMMO.vcxproj" Id="ff314d59-353d-422a-8fdf-a8856c8999f8" />
 </Solution>

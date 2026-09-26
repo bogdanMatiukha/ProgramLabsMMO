@@ -1,60 +1,52 @@
 #include <iostream>
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 
-double f1(double x)
-{
+double f1(double x) {
     return x * x * cos(2 * x) + 0.2;
 }
 
-double f2(double x)
-{
+double f2(double x) {
     return 1.0 / tan(x) - 0.1;
 }
 
-double bisection(double (*f)(double), double a, double b, double eps)
-{
+void solve(double (*f)(double), double a, double b, double eps, const string& taskName) {
     double c;
+    double beg_value, end_value;
+    int n = 0;
 
-    while ((b - a) > eps)
-    {
-        c = (a + b) / 2;
+    cout << "---" << taskName << "---" << endl;
 
-        if (f(a) * f(c) <= 0)
+    do {
+        c = (a + b) / 2.0;
+        beg_value = f(a);
+        end_value = f(c);
+
+        if (beg_value * end_value <= 0)
             b = c;
         else
             a = c;
-    }
 
-    return (a + b) / 2;
+        cout << n << ": a = " << a << "; b = " << b << "; c = " << c << endl;
+        cout << "beg: " << beg_value << " end: " << end_value << endl << endl;
+        n++;
+    } while (abs(a - b) > eps);
+
+    cout << "Result: " << end_value << "; c = " << c << endl << endl;
 }
 
-int main()
-{
+int main() {
     double eps = 0.005;
 
-    // Task 1
     double a1 = 0.88;
     double b1 = 0.98;
+    solve(f1, a1, b1, eps, "Task 1");
 
-    double root1 = bisection(f1, a1, b1, eps);
-
-    cout << "Task 1:" << endl;
-    cout << "Root = " << root1 << endl;
-    cout << "f(root) = " << f1(root1) << endl;
-
-    cout << endl;
-
-    // Task 2
     double a2 = 4.6;
     double b2 = 4.65;
-
-    double root2 = bisection(f2, a2, b2, eps);
-
-    cout << "Task 2:" << endl;
-    cout << "Root = " << root2 << endl;
-    cout << "f(root) = " << f2(root2) << endl;
+    solve(f2, a2, b2, eps, "Task 2");
 
     return 0;
 }
