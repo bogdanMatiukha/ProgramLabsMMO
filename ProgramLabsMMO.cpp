@@ -1,61 +1,68 @@
-#include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 
 using namespace std;
 
-double f1(double x) {
-    return x * x * cos(2 * x) + 0.2;
+double f(double x, double y) {
+    return 5.0 * x - 3.0 * y;
 }
 
-double df1(double x) {
-    return 2 * x * cos(2 * x) - 2 * x * x * sin(2 * x);
-}
-
-double f2(double x) {
-    return 1.0 / tan(x) - 0.1;
-}
-
-double df2(double x) {
-    return -1.0 / (sin(x) * sin(x));
-}
-
-void solveCombined(double (*f)(double), double (*df)(double), double a, double b, double eps, const string& taskName) {
-    double z_prev, z_cur = a;
-    double x_prev, x_cur = a;
-    double dx;
-    int n = 0;
-
-    cout << "=== " << taskName << " ===" << endl;
-    cout << fixed << setprecision(6);
-
-    do {
-        x_prev = x_cur;
-        z_prev = z_cur;
-
-        x_cur = x_prev - f(x_prev) / df(x_prev);
-
-        z_cur = z_prev - (f(z_prev) * (b - z_prev)) / (f(b) - f(z_prev));
-
-        dx = fabs(x_cur - z_cur);
-
-        cout << "n = " << n
-            << " | x (dotychni) = " << x_cur
-            << " | z (khordy) = " << z_cur
-            << " | dx = " << dx << endl;
-
-        n++;
-    } while (dx > eps);
-
-    double root = (x_cur + z_cur) / 2.0;
-    cout << "Result: x = " << root << "; f(x) = " << f(root) << endl << endl;
+double exactSolution(double x) {
+    return (5.0 / 3.0) * x - (5.0 / 9.0) + (14.0 / 9.0) * exp(-3.0 * x);
 }
 
 int main() {
-    const double eps = 0.005;
+    const double x0 = 0.0;
+    const double xEnd = 0.2;
+    const double y0 = 1.0;
+    const double h = 0.05;
 
-    solveCombined(f1, df1, 0.88, 0.98, eps, "Task 1");
-    solveCombined(f2, df2, 4.6, 4.65, eps, "Task 2");
+    int n = static_cast<int>(llround((xEnd - x0) / h));
+
+    double x = x0;
+    double y = y0;
+
+    cout << fixed << setprecision(6);
+    cout << "i   x         k1          k2          k3          k4          dy          y_rk4       y_exact     err\n";
+    cout << "------------------------------------------------------------------------------------------------------------\n";
+
+    for (int i = 0; i < n; ++i) {
+        double k1 = h * f(x, y);
+        double k2 = h * f(x + 0.5 * h, y + 0.5 * k1);
+        double k3 = h * f(x + 0.5 * h, y + 0.5 * k2);
+        double k4 = h * f(x + h, y + k3);
+        double dy = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+
+        double yEx = exactSolution(x);
+        double err = fabs(y - yEx);
+
+        cout << setw(2) << i << "  "
+            << setw(7) << setprecision(2) << x << "  "
+            << setprecision(6)
+            << setw(10) << k1 << "  "
+            << setw(10) << k2 << "  "
+            << setw(10) << k3 << "  "
+            << setw(10) << k4 << "  "
+            << setw(10) << dy << "  "
+            << setw(10) << y << "  "
+            << setw(10) << yEx << "  "
+            << scientific << setprecision(2) << err
+            << fixed << "\n";
+
+        y += dy;
+        x = x0 + (i + 1) * h;
+    }
+
+    double yExEnd = exactSolution(x);
+    double errEnd = fabs(y - yExEnd);
+    cout << setw(2) << n << "  "
+        << setw(7) << setprecision(2) << x << "  "
+        << setprecision(6)
+        << "     -           -           -           -           -      "
+        << setw(10) << y << "  "
+        << setw(10) << yExEnd << "  "
+        << scientific << setprecision(2) << errEnd << "\n";
 
     return 0;
 }
