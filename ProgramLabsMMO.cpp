@@ -1,68 +1,116 @@
-#include <cmath>
-#include <iomanip>
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
-double f(double x, double y) {
-    return 5.0 * x - 3.0 * y;
-}
+double det4(double mat[4][4]) {
+    double a[4][4];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            a[i][j] = mat[i][j];
 
-double exactSolution(double x) {
-    return (5.0 / 3.0) * x - (5.0 / 9.0) + (14.0 / 9.0) * exp(-3.0 * x);
+    double det = 1.0;
+    for (int k = 0; k < 4; k++) {
+        for (int i = k + 1; i < 4; i++) {
+            double koef = a[i][k] / a[k][k];
+            for (int j = k; j < 4; j++) {
+                a[i][j] -= koef * a[k][j];
+            }
+        }
+        det *= a[k][k];
+    }
+    return det;
 }
 
 int main() {
-    const double x0 = 0.0;
-    const double xEnd = 0.2;
-    const double y0 = 1.0;
-    const double h = 0.05;
 
-    int n = static_cast<int>(llround((xEnd - x0) / h));
+    double m[4][5] = {
+        { 10,  2, -1,  1,  15 },
+        { 2, -8,  2, -1, -14 },
+        { 1,  1,  9, -2,   8 },
+        { -1,  1,  2,  7,  17 }
+    };
 
-    double x = x0;
-    double y = y0;
+    double eps = 0.0001;
 
-    cout << fixed << setprecision(6);
-    cout << "i   x         k1          k2          k3          k4          dy          y_rk4       y_exact     err\n";
-    cout << "------------------------------------------------------------------------------------------------------------\n";
+    // 1. Метод Крамера
+    double baseMat[4][4];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            baseMat[i][j] = m[i][j];
 
-    for (int i = 0; i < n; ++i) {
-        double k1 = h * f(x, y);
-        double k2 = h * f(x + 0.5 * h, y + 0.5 * k1);
-        double k3 = h * f(x + 0.5 * h, y + 0.5 * k2);
-        double k4 = h * f(x + h, y + k3);
-        double dy = (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+    double dMain = det4(baseMat);
+    double xCramer[4] = { 0 };
 
-        double yEx = exactSolution(x);
-        double err = fabs(y - yEx);
-
-        cout << setw(2) << i << "  "
-            << setw(7) << setprecision(2) << x << "  "
-            << setprecision(6)
-            << setw(10) << k1 << "  "
-            << setw(10) << k2 << "  "
-            << setw(10) << k3 << "  "
-            << setw(10) << k4 << "  "
-            << setw(10) << dy << "  "
-            << setw(10) << y << "  "
-            << setw(10) << yEx << "  "
-            << scientific << setprecision(2) << err
-            << fixed << "\n";
-
-        y += dy;
-        x = x0 + (i + 1) * h;
+    for (int col = 0; col < 4; col++) {
+        double tempMat[4][4];
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                tempMat[i][j] = (j == col) ? m[i][4] : m[i][j];
+            }
+        }
+        xCramer[col] = det4(tempMat) / dMain;
     }
 
-    double yExEnd = exactSolution(x);
-    double errEnd = fabs(y - yExEnd);
-    cout << setw(2) << n << "  "
-        << setw(7) << setprecision(2) << x << "  "
-        << setprecision(6)
-        << "     -           -           -           -           -      "
-        << setw(10) << y << "  "
-        << setw(10) << yExEnd << "  "
-        << scientific << setprecision(2) << errEnd << "\n";
+    cout << "1. Cramer's method: ";
+    for (int i = 0; i < 4; i++) cout << xCramer[i] << "  ";
+    cout << endl;
+
+    // 2. Метод Гауса
+    double a[4][5];
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 5; j++)
+            a[i][j] = m[i][j];
+
+    // Прямий хід
+    for (int k = 0; k < 4; k++) {
+        for (int i = k + 1; i < 4; i++) {
+            double koef = a[i][k] / a[k][k];
+            for (int j = k; j < 5; j++) {
+                a[i][j] -= koef * a[k][j];
+            }
+        }
+    }
+
+    // Зворотний хід
+    double xGauss[4] = { 0 };
+    for (int i = 3; i >= 0; i--) {
+        double sum = a[i][4];
+        for (int j = i + 1; j < 4; j++) {
+            sum -= a[i][j] * xGauss[j];
+        }
+        xGauss[i] = sum / a[i][i];
+    }
+
+    cout << "2. Gauss method: ";
+    for (int i = 0; i < 4; i++) cout << xGauss[i] << "  ";
+    cout << endl;
+
+    // 3. Метод простих ітерацій
+    double xOld[4] = { 0 }, xNew[4] = { 0 };
+    int iter = 0;
+    while (true) {
+        iter++;
+        for (int i = 0; i < 4; i++) {
+            double sum = m[i][4];
+            for (int j = 0; j < 4; j++) {
+                if (i != j) sum -= m[i][j] * xOld[j];
+            }
+            xNew[i] = sum / m[i][i];
+        }
+
+        double maxDiff = 0;
+        for (int i = 0; i < 4; i++) {
+            if (fabs(xNew[i] - xOld[i]) > maxDiff)
+                maxDiff = fabs(xNew[i] - xOld[i]);
+            xOld[i] = xNew[i];
+        }
+        if (maxDiff < eps) break;
+    }
+
+    cout << "3. Simple iteration method (" << iter << " iter.): ";
+    for (int i = 0; i < 4; i++) cout << xNew[i] << "  ";
+    cout << endl;
 
     return 0;
 }
